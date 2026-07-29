@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify tag matches package version
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          echo "Tag version: ${TAG_VERSION}"
+          echo "Package version: ${PACKAGE_VERSION}"
+          if [ "${TAG_VERSION}" != "${PACKAGE_VERSION}" ]; then
+            echo "Tag version and package.json version mismatch."
+            exit 1
+          fi
+
+  build:
+    needs: verify-version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: build:windows
+            artifact_name: dwss-convertor-cli.exe
+          - os: ubuntu-latest
+            script: build:linux:x64
+            artifact_name: dwss-convertor-cli-linux-x64
+          - os: ubuntu-latest
+            script: build:linux:arm64
+            artifact_name: dwss-convertor-cli-linux-arm64
+          - os: macos-latest
+            script: build:macos:x64
+            artifact_name: dwss-convertor-cli-macos-x64
+          - os: macos-latest
+            script: build:macos:arm64
+            artifact_name: dwss-convertor-cli-macos-arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Show runtime versions
+        shell: bash
+        run: |
+          node --version
+          bun --version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build binary
+        run: bun run ${{ matrix.script }}
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}
+          if-no-files-found: error
+
+  publish-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Collect release files
+        shell: bash
+        run: |
+          mkdir -p release-files
+          find release-assets -type f -maxdepth 3 -exec cp {} release-files/ \;
+          ls -la release-files
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: release-files/*
