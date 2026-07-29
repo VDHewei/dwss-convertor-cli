@@ -39,7 +39,7 @@ bun run build:all
 
 支持的转义字符包括 `\"`、`\\`、`\n`、`\r` 和 `\t`。重复或重叠的源文本会被拒绝。所有批量映射都会与原始可见的 DOCX 文本进行匹配。每个映射至少要匹配一次，否则命令会失败且不生成输出文件。
 
-`find` 对可见的 Word 段落执行字面、区分大小写的匹配。它接受一个或多个位置查询，并且可选的 `--find-file <queries.txt>`（每条非空行是一个查询，查询在位置查询之后追加）。`--json <output.json>` 会以 UTF-8 编码精确地生成如下形状的 JSON：
+`find` 对可见的 Word 段落执行字面、区分大小写的匹配。它接受一个或多个位置查询，并且可选的 `--find-file <queries.txt>`（每条非空行是一个查询，查询在位置查询之后追加）。`--json <output.json>` 会将 UTF-8 JSON 写入文件；当 `--json` 不带路径时，会在终端输出美化后的 JSON：
 
 ```json
 [{"find":"inspection","matches":["matching visible paragraph"]}]

@@ -66,6 +66,25 @@ interface FindResult {
   matches: string[];
 }
 
+export function highlightLiteralMatches(
+  line: string,
+  query: string,
+  colorize: (value: string) => string = chalk.red,
+): string {
+  if (!query) return line;
+  let output = '';
+  let from = 0;
+  let at = line.indexOf(query, from);
+  while (at >= 0) {
+    output += line.slice(from, at);
+    output += colorize(query);
+    from = at + query.length;
+    at = line.indexOf(query, from);
+  }
+  output += line.slice(from);
+  return output;
+}
+
 function parse(args: string[]): Parsed {
   const positionals: string[] = [];
   const options: Record<string, string | true> = {};
@@ -102,10 +121,12 @@ function requiredOption(options: Parsed['options'], name: string): string {
 
 function usage(): string {
   return [
+    'dwss-convertor-cli is a tool for safe DOCX template check, fix, replace, find, and render workflows.',
+    '',
     'Usage:',
     '  dwss-convertor-cli replace <input.docx> <find> <replacement> --output <output.docx>',
     '  dwss-convertor-cli replace <input.docx> --replacements-file <mappings.txt> --output <output.docx>',
-    '  dwss-convertor-cli find <input.docx> <find...> [--find-file <queries.txt>] [--json <output.json>]',
+    '  dwss-convertor-cli find <input.docx> <find...> [--find-file <queries.txt>] [--json [output.json]]',
     '  dwss-convertor-cli check <input.docx> [--data-file <data.json>]',
     '  dwss-convertor-cli fix <input.docx> --output <output.docx> [--data-file <data.json>]',
     '  dwss-convertor-cli render <input.docx> --output <output.docx> (--data-file <data.json> | --data-url <url> [--method GET | --method POST --body <json>])',
@@ -151,7 +172,7 @@ async function loadFindQueries(parsed: Parsed): Promise<string[]> {
 
 export async function runCommand(args: string[], io: CommandIo = defaultCommandIo()): Promise<number> {
   const [command, ...rest] = args;
-  if (!command || command === '--help' || command === 'help') {
+  if (!command || command === '--help' || command === '-h' || command === 'help' || command === 'h') {
     io.out(usage());
     return 0;
   }
@@ -181,12 +202,18 @@ export async function runCommand(args: string[], io: CommandIo = defaultCommandI
     const queries = await loadFindQueries(parsed);
     const lines = await extractDocxVisibleLines(await readFile(parsed.positionals[0]));
     const results: FindResult[] = queries.map((find) => ({ find, matches: lines.filter((line) => line.includes(find)) }));
+    const jsonOption = parsed.options.json;
+    const jsonToStdout = jsonOption === true;
+    const jsonOutput = typeof jsonOption === 'string' ? jsonOption : undefined;
+    if (jsonToStdout) {
+      io.out(JSON.stringify(results, null, 2));
+      return 0;
+    }
     for (const result of results) {
       io.out(chalk.bold(`${JSON.stringify(result.find)}: ${result.matches.length} matching line${result.matches.length === 1 ? '' : 's'}.`));
       if (!result.matches.length) io.out('  No matching lines.');
-      for (const line of result.matches) io.out(`  ${line}`);
+      for (const line of result.matches) io.out(`  ${highlightLiteralMatches(line, result.find)}`);
     }
-    const jsonOutput = option(parsed.options, 'json');
     if (jsonOutput) await writeFile(jsonOutput, JSON.stringify(results), 'utf8');
     return 0;
   }

@@ -2,12 +2,27 @@ import { describe, expect, test } from 'bun:test';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { runCommand } from '../src/cmd/command.js';
+import { highlightLiteralMatches, runCommand } from '../src/cmd/command.js';
 import { makeDocx } from './helpers.js';
 
 const runtime = join(process.cwd(), 'test', '.runtime');
 
 describe('command logic', () => {
+  test('highlights matched literal segments for find output', () => {
+    const rendered = highlightLiteralMatches('alpha beta beta', 'beta', (value) => `<red>${value}</red>`);
+    expect(rendered).toBe('alpha <red>beta</red> <red>beta</red>');
+  });
+
+  test('help aliases output usage', async () => {
+    const outputs: string[] = [];
+    const io = { out: (message: string) => outputs.push(message), error: () => undefined };
+    expect(await runCommand(['help'], io)).toBe(0);
+    expect(await runCommand(['h'], io)).toBe(0);
+    expect(await runCommand(['-h'], io)).toBe(0);
+    expect(outputs.every((message) => message.startsWith('dwss-convertor-cli is a tool for safe DOCX template check, fix, replace, find, and render workflows.'))).toBe(true);
+    expect(outputs.some((message) => message.includes('\nUsage:\n'))).toBe(true);
+  });
+
   test('check returns nonzero and reports validation errors', async () => {
     await mkdir(runtime, { recursive: true });
     const input = join(runtime, 'invalid.docx');

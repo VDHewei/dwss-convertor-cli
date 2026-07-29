@@ -72,6 +72,20 @@ describe('CLI replacement, find, and fix UX', () => {
     await rm(runtime, { recursive: true, force: true });
   });
 
+  test('find --json without path prints prettified JSON to terminal', async () => {
+    await mkdir(runtime, { recursive: true });
+    const input = join(runtime, 'find-stdout.docx');
+    await writeFile(input, await makeDocx('<w:p><w:r><w:t>Alpha beta</w:t></w:r></w:p><w:p><w:r><w:t>beta only</w:t></w:r></w:p>'));
+    const state = memoryIo();
+    expect(await runCommand(['find', input, 'beta', '--json'], state.io)).toBe(0);
+    expect(state.out).toHaveLength(1);
+    expect(state.out[0]).toContain('\n  {');
+    expect(JSON.parse(state.out[0])).toEqual([
+      { find: 'beta', matches: ['Alpha beta', 'beta only'] },
+    ]);
+    await rm(runtime, { recursive: true, force: true });
+  });
+
   test('fix reports progress, diffs, individual counts, and totals', async () => {
     await mkdir(runtime, { recursive: true });
     const input = join(runtime, 'fix.docx');

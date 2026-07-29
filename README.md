@@ -39,7 +39,7 @@ Single replacement retains `replace <docx> <find> <replacement> --output ...`. B
 
 Supported escapes are `\"`, `\\`, `\n`, `\r`, and `\t`. Duplicate or overlapping source text is rejected. All batch mappings are matched against the original visible DOCX text. Every mapping must have at least one hit or the command fails and writes no output file.
 
-`find` performs literal, case-sensitive matching against visible Word paragraphs. It accepts one or more positional queries and optional `--find-file <queries.txt>` (one query per non-empty line, appended after positional queries). `--json <output.json>` writes UTF-8 JSON exactly in this shape:
+`find` performs literal, case-sensitive matching against visible Word paragraphs. It accepts one or more positional queries and optional `--find-file <queries.txt>` (one query per non-empty line, appended after positional queries). `--json <output.json>` writes UTF-8 JSON to file; `--json` without a path prints prettified JSON to terminal:
 
 ```json
 [{"find":"inspection","matches":["matching visible paragraph"]}]
