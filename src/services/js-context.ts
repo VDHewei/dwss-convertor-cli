@@ -1,5 +1,6 @@
 import { CliError } from '../utils/errors.js';
 import { fetchImageFile } from './file-service.js';
+import { appendOptions, createOptions, defaultColumns, MATCH_THRESHOLD, textParse, chooseBreak } from './form-data.js';
 
 type DataRecord = Record<string, unknown>;
 
@@ -142,16 +143,79 @@ function renderFormAction(
 
 const toArray = <T>(value: T | T[] | null | undefined): T[] => (value == null || value === '' ? [] : Array.isArray(value) ? value : [value]);
 
+type RenderDateValue = string | number | Date | null | undefined;
+
+const dateFormats: Record<string, string> = {
+  timerange: 'HH:mm',
+  time: 'HH:mm',
+  datetime: 'd MMMM yyyy, HH:mm',
+  datetime2: 'yyyy-MM-dd, HH:mm',
+  datetimerange: 'yyyy-MM-dd HH:mm',
+  daterange: 'yyyy-MM-dd',
+  weekday: 'EEEE',
+  month: 'MMMM yyyy',
+  year: 'yyyy',
+  monthSlash: 'MM/yyyy',
+  monthYear: 'MMMMyyyy',
+  date: 'yyyy-MM-dd',
+};
+
+function renderHongKongDateTime(value: RenderDateValue, format = dateFormats.datetime): string {
+  if (value == null || value === '') return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf()) || date.valueOf() <= 0) return '';
+
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Hong_Kong',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date).map(({ type, value: part }) => [type, part]),
+  );
+  const shortMonth = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Hong_Kong',
+    month: 'short',
+  }).format(date);
+  const month = Number(parts.month);
+  const day = Number(parts.day);
+
+  return format.replace(/yyyy|MMMM|MMM|MM|dd|d|HH|mm|ss|EEEE/g, (token) => {
+    switch (token) {
+      case 'yyyy': return parts.year;
+      case 'MMMM': return parts.month;
+      case 'MMM': return shortMonth;
+      case 'MM': return String(month).padStart(2, '0');
+      case 'dd': return String(day).padStart(2, '0');
+      case 'd': return String(day);
+      case 'HH': return parts.hour;
+      case 'mm': return parts.minute;
+      case 'ss': return parts.second;
+      case 'EEEE': return parts.weekday;
+      default: return token;
+    }
+  });
+}
+
 /**
  * Pure, data-driven compatibility functions for docx-templates. They operate on
  * caller-provided template/form JSON only; service-specific business mappings are
  * intentionally not included in this standalone CLI.
  */
 export const additionalJsContext = {
+  appendOptions,
   chunk<T>(items: T[], size: number): T[][] {
     return Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, (index + 1) * size));
   },
   ensureArray: toArray,
+  createOptions,
+  defaultColumns,
   firstChar(value: string | null | undefined): string {
     return value?.charAt(0) ?? '';
   },
@@ -163,6 +227,7 @@ export const additionalJsContext = {
     return left.filter((item) => rightSet.has(item));
   },
   isArray: Array.isArray,
+  MATCH_THRESHOLD,
   newLInes(value: string | null | undefined): string {
     return value?.replace(/\r?\n/g, '\n') ?? '';
   },
@@ -216,17 +281,22 @@ export const additionalJsContext = {
       name: stringValue(valueAt(question, 'questionDesc', valueAt(question, 'questionName', ''))),
     };
   },
-  renderDatetime(value: string | number | Date | null | undefined): string {
-    if (value == null || value === '') return '';
-    const date = new Date(value);
-    return Number.isNaN(date.valueOf()) ? '' : date.toISOString().slice(0, 10);
+  renderDatetime(value: RenderDateValue): string {
+    return renderHongKongDateTime(value);
   },
-  renderFormatTime(value: string | number | Date | null | undefined, _format: string): string {
-    return additionalJsContext.renderDatetime(value);
+  renderDatetimes(values: RenderDateValue | RenderDateValue[]): string {
+    const dateValues = Array.isArray(values) ? values : [values];
+    return dateValues.map((value) => additionalJsContext.renderDatetime(value)).filter(Boolean).join('\n');
   },
-  renderTime(value: string | number | Date | null | undefined, _type: string): string {
-    return additionalJsContext.renderDatetime(value);
+  renderFormatTime(value: RenderDateValue, format: string): string {
+    return renderHongKongDateTime(value, format);
   },
+  renderHongKongDateTime,
+  renderTime(value: RenderDateValue, type: string): string {
+    return renderHongKongDateTime(value, dateFormats[type] ?? 'd MMMM yyyy');
+  },
+  textParse,
+  chooseBreak,
   uniq<T>(items: T[]): T[] {
     return [...new Set(items)];
   },

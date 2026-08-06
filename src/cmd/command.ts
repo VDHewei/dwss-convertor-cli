@@ -129,7 +129,7 @@ function usage(): string {
     '  dwss-convertor-cli find <input.docx> <find...> [--find-file <queries.txt>] [--json [output.json]]',
     '  dwss-convertor-cli check <input.docx> [--data-file <data.json>]',
     '  dwss-convertor-cli fix <input.docx> --output <output.docx> [--data-file <data.json>]',
-    '  dwss-convertor-cli render <input.docx> --output <output.docx> (--data-file <data.json> | --data-url <url> [--method GET | --method POST --body <json>])',
+    '  dwss-convertor-cli render <input.docx> --output <output.docx> (--data-file <data.json> | --data-url <url> [--query <json>] [--header <json>] [--method GET | --method POST --body <json>])',
   ].join('\n');
 }
 
@@ -258,6 +258,8 @@ export async function runCommand(args: string[], io: CommandIo = defaultCommandI
       dataUrl: option(parsed.options, 'data-url'),
       method: option(parsed.options, 'method'),
       body: option(parsed.options, 'body'),
+      query: option(parsed.options, 'query'),
+      header: option(parsed.options, 'header'),
     });
     const rendered = await renderDocx(template, data);
     await writeFile(requiredOption(parsed.options, 'output'), rendered);

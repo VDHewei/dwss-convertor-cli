@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { additionalJsContext, createRenderBuilder, registeredFunctionNames } from '../src/services/js-context.js';
+import { appendOptions, loaderBuilder, textParse } from '../src/services/form-data.js';
 import { normalizeRenderData } from '../src/services/render.js';
 
 const template = {
@@ -63,9 +64,28 @@ describe('data-driven additionalJsContext compatibility', () => {
     expect(builder.summarySectionItems(builder.getCheckListSectionsWithCache(), 'Selected option')).toBe(1);
   });
 
+  test('formats dates in Hong Kong time and renders every checklist date', () => {
+    expect(additionalJsContext.renderDatetime('2026-06-30T00:40:00.000Z')).toBe('30 June 2026, 08:40');
+    expect(additionalJsContext.renderHongKongDateTime('2026-06-30T00:40:00.000Z', 'd MMMM yyyy, HH:mm')).toBe('30 June 2026, 08:40');
+    expect(additionalJsContext.renderDatetime('not-a-date')).toBe('');
+    expect(additionalJsContext.renderDatetimes([
+      '2026-06-29T04:25:00+08:00',
+      '2026-06-28T05:15:00+08:00',
+    ])).toBe('29 June 2026, 04:25\n28 June 2026, 05:15');
+  });
+
   test('converts inline image data into a docx-templates image payload', async () => {
     const image = await additionalJsContext.renderImage('data:image/png;base64,aGVsbG8=', { scale: { width: 120 } });
     expect(image).toMatchObject({ data: 'aGVsbG8=', extension: '.png' });
     expect(image.width).toBeCloseTo(120 / 37.795275591);
+  });
+
+  test('wraps form data with checklist and helper aliases', () => {
+    const data = loaderBuilder({ template, answers });
+    expect(data.builder).toBe(data.helper);
+    expect(data.builder).toBe(data.filter);
+    expect(data.builder.getCheckListSections()).toHaveLength(0);
+    expect(appendOptions([{ key: 'remarks', label: 'Remarks', answerTypes: ['text'] }]).targetColumns).toHaveLength(4);
+    expect(textParse('first<w:br>second<w:br>third')).toEqual({ text: 'first', breaker: 2 });
   });
 });

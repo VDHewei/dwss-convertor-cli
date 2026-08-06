@@ -1,6 +1,7 @@
 import { createReport } from 'docx-templates';
 
 import { CliError } from '../utils/errors.js';
+import { loaderBuilder } from './form-data.js';
 import { additionalJsContext, createRenderBuilder } from './js-context.js';
 
 export function normalizeRenderData(data: unknown): unknown {
@@ -11,7 +12,7 @@ export function normalizeRenderData(data: unknown): unknown {
     ? { ...source, ...formData }
     : { ...source };
   if (!normalized.builder) normalized.builder = createRenderBuilder(normalized.template, normalized.answers);
-  return normalized;
+  return loaderBuilder(normalized);
 }
 
 export async function renderDocx(document: Uint8Array, data: unknown): Promise<Uint8Array> {

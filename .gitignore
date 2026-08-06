@@ -3,3 +3,7 @@ dist/
 *.exe
 .idea/
 test/attachments/
+graphify-out/
+.reasonix/
+.ua/
+ignored

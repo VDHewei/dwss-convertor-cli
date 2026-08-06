@@ -51,8 +51,9 @@ For relative file-service image paths, set `FILE_SERVICE_URL` in `dwss-convertor
 
 ## User skill file mapping
 
-| Source file | Target agent | Copy destination |
-|---|---|---|
-| `skills/docx-cli/SKILL.md` | GitHub Copilot Agent | `.github/prompts/docx-cli.prompt.md` |
+| Source file | Target agent           | Copy destination |
+|---|------------------------|---|
+| `skills/docx-cli/SKILL.md` | GitHub Copilot Agent   | `.github/prompts/docx-cli.prompt.md` |
 | `skills/docx-cli/SKILL.md` | Anthropic Claude Agent | `.claude/commands/docx-cli.md` |
 | `skills/docx-cli/SKILL.md` | DeepSeek Agent         | `.reasonix/skills/docx-cli.md` |
+| `skills/docx-cli/SKILL.md` | GitHub Copilot Agent Copilot v1.0.78  | `.github/prompts/docx-cli.md` |
