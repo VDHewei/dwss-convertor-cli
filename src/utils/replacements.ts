@@ -1,4 +1,4 @@
-import { CliError } from './errors.js';
+import { CliError } from './errors';
 
 export interface TextReplacement {
   find: string;

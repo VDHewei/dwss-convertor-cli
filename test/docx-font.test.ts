@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { deobfuscateDocxFont, parseDocxStylesFonts, parseDocxThemeFonts, resolveDocxRunFonts } from '../src/services/docx-font.js';
+import { deobfuscateDocxFont, parseDocxStylesFonts, parseDocxThemeFonts, resolveDocxRunFonts } from '../src/services/docx-font';
 
 describe('DOCX font helpers', () => {
   test('resolves direct and themed default fonts', () => {

@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 
-import { CliError } from '../utils/errors.js';
-import type { TextReplacement } from '../utils/replacements.js';
+import { CliError } from '../utils/errors';
+import type { TextReplacement } from '../utils/replacements';
 
 const TEXT_NODE = /(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g;
 

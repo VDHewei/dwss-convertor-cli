@@ -1,7 +1,7 @@
-import { registeredFunctionNames } from './js-context.js';
-import { extractTextParts, replaceDocxText } from './ooxml.js';
-import { inspectTemplateJavaScript, validateDocxTemplate, validateTemplateText } from './template-validation.js';
-import { CliError } from '../utils/errors.js';
+import { registeredFunctionNames } from './js-context';
+import { extractTextParts, replaceDocxText } from './ooxml';
+import { inspectTemplateJavaScript, validateDocxTemplate, validateTemplateText } from './template-validation';
+import { CliError } from '../utils/errors';
 
 export type Confirm = (question: string) => Promise<boolean>;
 

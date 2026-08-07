@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import { validateDocxTemplate, validateTemplateText } from '../src/services/template-validation.js';
-import { makeDocx } from './helpers.js';
+import { validateDocxTemplate, validateTemplateText } from '../src/services/template-validation';
+import { makeDocx } from './helpers';
 
 describe('template validation', () => {
   test('accepts registered functions and delimiters inside quoted strings', () => {

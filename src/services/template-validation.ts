@@ -1,5 +1,5 @@
-import { registeredFunctionNames } from './js-context.js';
-import { extractTextParts } from './ooxml.js';
+import { registeredFunctionNames } from './js-context';
+import { extractTextParts } from './ooxml';
 
 export type IssueKind = 'delimiter' | 'token' | 'syntax' | 'unknown-function' | 'command';
 

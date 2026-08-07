@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import { CliError } from '../utils/errors.js';
+import { CliError } from '../utils/errors';
 
 const INTERNAL_FILE_SERVICE = 'http://dwss-files:8000';
 const RELATIVE_FILE_PATH = /^\/api\/v1\/files\//;

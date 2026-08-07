@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { CliError } from '../src/utils/errors.js';
-import { runCommand, type CommandIo } from '../src/cmd/command.js';
-import { makeDocx } from './helpers.js';
+import { CliError } from '../src/utils/errors';
+import { runCommand, type CommandIo } from '../src/cmd/command';
+import { makeDocx } from './helpers';
 
 const runtime = join(process.cwd(), 'test', '.runtime-ux');
 

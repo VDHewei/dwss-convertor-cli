@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import { replaceDocxText } from '../src/services/ooxml.js';
-import { documentXml, makeDocx, stylesXml } from './helpers.js';
+import { replaceDocxText } from '../src/services/ooxml';
+import { documentXml, makeDocx, stylesXml } from './helpers';
 
 describe('DOCX text replacement', () => {
   test('changes only w:t content when a match crosses formatted runs', async () => {

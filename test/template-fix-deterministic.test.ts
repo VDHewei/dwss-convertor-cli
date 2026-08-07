@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 
-import { fixDocxTemplate } from '../src/services/template-fix.js';
-import { validateDocxTemplate } from '../src/services/template-validation.js';
-import { documentXml, makeDocx } from './helpers.js';
+import { fixDocxTemplate } from '../src/services/template-fix';
+import { validateDocxTemplate } from '../src/services/template-validation';
+import { documentXml, makeDocx } from './helpers';
 
 describe('deterministic JavaScript template repairs', () => {
   test('normalizes paired smart string delimiters but leaves ordinary text alone', async () => {

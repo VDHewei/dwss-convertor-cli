@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-import { CliError } from '../utils/errors.js';
+import { CliError } from '../utils/errors';
 
 export interface DataSourceOptions {
   dataFile?: string;

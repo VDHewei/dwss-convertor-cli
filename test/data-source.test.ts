@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import { CliError } from '../src/utils/errors.js';
-import { loadRenderData } from '../src/services/data-source.js';
+import { CliError } from '../src/utils/errors';
+import { loadRenderData } from '../src/services/data-source';
 
 async function rejectedValue(promise: Promise<unknown>): Promise<unknown> {
   try {

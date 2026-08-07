@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-import { runCommand } from './cmd/command.js';
-import { CliError } from './utils/errors.js';
+import { runCommand } from './cmd/command';
+import { CliError } from './utils/errors';
 
 try {
   process.exitCode = await runCommand(process.argv.slice(2));

@@ -1,8 +1,9 @@
 import { createReport } from 'docx-templates';
 
-import { CliError } from '../utils/errors.js';
-import { loaderBuilder } from './form-data.js';
-import { additionalJsContext, createRenderBuilder } from './js-context.js';
+import { CliError } from '../utils/errors';
+import { loaderBuilder } from './form-data';
+import { additionalJsContext, createRenderBuilder } from './js-context';
+import { parseTemplateDraft } from './template-draft';
 
 export function normalizeRenderData(data: unknown): unknown {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
@@ -18,9 +19,10 @@ export function normalizeRenderData(data: unknown): unknown {
 export async function renderDocx(document: Uint8Array, data: unknown): Promise<Uint8Array> {
   if (data === null || typeof data !== 'object') throw new CliError('Render data must be a JSON object or array.');
   try {
+    const normalized = normalizeRenderData(data);
     const rendered = await createReport({
-      template: Buffer.from(document),
-      data: normalizeRenderData(data),
+      template: await parseTemplateDraft(Buffer.from(document), normalized),
+      data: normalized,
       additionalJsContext,
       cmdDelimiter: ['+++', '+++'],
       failFast: true,

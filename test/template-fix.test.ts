@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 
-import { CliError } from '../src/utils/errors.js';
-import { fixDocxTemplate } from '../src/services/template-fix.js';
-import { documentXml, makeDocx } from './helpers.js';
+import { CliError } from '../src/utils/errors';
+import { fixDocxTemplate } from '../src/services/template-fix';
+import { documentXml, makeDocx } from './helpers';
 
 describe('template fix', () => {
   test('repairs deterministic full-width commas without touching quoted text', async () => {

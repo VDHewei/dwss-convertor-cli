@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { highlightLiteralMatches, runCommand } from '../src/cmd/command.js';
-import { makeDocx } from './helpers.js';
+import { highlightLiteralMatches, runCommand } from '../src/cmd/command';
+import { makeDocx } from './helpers';
 
 const runtime = join(process.cwd(), 'test', '.runtime');
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { fetchImageFile, normalizeFileServiceUrl, parseFileServiceUrl } from '../src/services/file-service.js';
+import { fetchImageFile, normalizeFileServiceUrl, parseFileServiceUrl } from '../src/services/file-service';
 
 describe('file-service image resolution', () => {
   test('reads FILE_SERVICE_URL from standard .env assignment forms', () => {

@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
-import { CliError } from '../src/utils/errors.js';
-import { replaceDocxTextBatch } from '../src/services/ooxml.js';
-import { parseReplacementFile } from '../src/utils/replacements.js';
-import { documentXml, makeDocx, stylesXml } from './helpers.js';
+import { CliError } from '../src/utils/errors';
+import { replaceDocxTextBatch } from '../src/services/ooxml';
+import { parseReplacementFile } from '../src/utils/replacements';
+import { documentXml, makeDocx, stylesXml } from './helpers';
 
 describe('batch replacement mappings', () => {
   test('parses quoted mappings with escaped quotes and backslashes', () => {

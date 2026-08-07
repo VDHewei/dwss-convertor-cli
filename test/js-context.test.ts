@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 
-import { additionalJsContext, createRenderBuilder, registeredFunctionNames } from '../src/services/js-context.js';
-import { appendOptions, loaderBuilder, textParse } from '../src/services/form-data.js';
-import { normalizeRenderData } from '../src/services/render.js';
+import { additionalJsContext, createRenderBuilder, registeredFunctionNames } from '../src/services/js-context';
+import { appendOptions, loaderBuilder, textParse } from '../src/services/form-data';
+import { normalizeRenderData } from '../src/services/render';
 
 const template = {
   sections: [{

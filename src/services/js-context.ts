@@ -1,6 +1,6 @@
-import { CliError } from '../utils/errors.js';
-import { fetchImageFile } from './file-service.js';
-import { appendOptions, createOptions, defaultColumns, MATCH_THRESHOLD, textParse, chooseBreak } from './form-data.js';
+import { CliError } from '../utils/errors';
+import { fetchImageFile } from './file-service';
+import { appendOptions, createOptions, defaultColumns, MATCH_THRESHOLD, textParse, chooseBreak } from './form-data';
 
 type DataRecord = Record<string, unknown>;
 

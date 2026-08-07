@@ -3,13 +3,13 @@ import chalk from 'chalk';
 import { readFile, writeFile } from 'node:fs/promises';
 import { stdin, stdout } from 'node:process';
 
-import { loadRenderData } from '../services/data-source.js';
-import { CliError } from '../utils/errors.js';
-import { extractDocxVisibleLines, replaceDocxText, replaceDocxTextBatch } from '../services/ooxml.js';
-import { parseReplacementFile, type TextReplacement } from '../utils/replacements.js';
-import { renderDocx } from '../services/render.js';
-import { fixDocxTemplate, type FixProgress, type FixResult } from '../services/template-fix.js';
-import { validateDocxTemplate } from '../services/template-validation.js';
+import { loadRenderData } from '../services/data-source';
+import { CliError } from '../utils/errors';
+import { extractDocxVisibleLines, replaceDocxText, replaceDocxTextBatch } from '../services/ooxml';
+import { parseReplacementFile, type TextReplacement } from '../utils/replacements';
+import { renderDocx } from '../services/render';
+import { fixDocxTemplate, type FixProgress, type FixResult } from '../services/template-fix';
+import { validateDocxTemplate } from '../services/template-validation';
 
 export interface CommandIo {
   out(message: string): void;
