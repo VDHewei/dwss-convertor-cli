@@ -49,6 +49,16 @@ Queries retain their supplied order. A query with no match succeeds with an empt
 
 For relative file-service image paths, set `FILE_SERVICE_URL` in `dwss-convertor-cli/.env`. The process environment takes precedence; the CLI falls back to the sibling `dwss-convertor-service/.env` for existing workspace compatibility.
 
+## Template function helpers
+
+`loaderBuilder` now exposes WEB-9072-compatible checklist helpers in template data:
+
+- `builder.getFollowupSections()`: group observation/followup rows by checklist workflow and row index pairing.
+- `builder.getRemarkSections()`: group remarks rows by checklist workflow.
+- `builder.getQuestionMetadata(answerTypes?)`: supports question number parsing from custom descriptions.
+
+Full function usage and template snippets are documented in `skills/docx-cli/function_usage.md`.
+
 ## User skill file mapping
 
 | Source file | Target agent           | Copy destination |

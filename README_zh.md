@@ -49,6 +49,16 @@ bun run build:all
 
 对于相对文件服务图像路径，需在 `dwss-convertor-cli/.env` 中设置 `FILE_SERVICE_URL`。进程环境具有优先权；CLI 会回退到同级目录中的 `dwss-convertor-service/.env` 以确保与现有工作区的兼容性。
 
+## 模板函数辅助能力
+
+`loaderBuilder` 现已提供与 WEB-9072 对齐的清单函数：
+
+- `builder.getFollowupSections()`：按 checklist 链路聚合 Observation/Followup 行，并按行号配对。
+- `builder.getRemarkSections()`：按 checklist 链路聚合 Remarks 行。
+- `builder.getQuestionMetadata(answerTypes?)`：支持从自定义题目描述中提取题号。
+
+完整函数说明与模板示例见 `skills/docx-cli/function_usage.md`。
+
 ## 用户技能文件映射
 
 | 源文件 | 目标 Agent               | 复制目录                         |

@@ -97,6 +97,91 @@ interface AnswerEntry {
   customQuestionDesc: string;
 }
 
+export interface FollowupSection {
+  readonly sectionNo: string;
+  readonly questions: FollowupQuestion[];
+}
+
+export interface FollowupQuestion {
+  readonly sectionNo: string;
+  readonly description: string;
+  readonly value: string;
+  readonly rows: FollowupRow[];
+}
+
+export interface FollowupRow {
+  readonly actionBy: string;
+  readonly completionForAgreedDueDate: string;
+  readonly completionDate: string;
+  readonly rectificationStatus: string;
+  readonly location: string;
+  readonly finding: string;
+  readonly action: string;
+  readonly observationPhotos: DataRecord[];
+  readonly followupPhotos: DataRecord[];
+}
+
+export interface RemarkSection {
+  readonly sectionNo: string;
+  readonly questions: RemarkQuestion[];
+}
+
+export interface RemarkQuestion {
+  readonly sectionNo: string;
+  readonly description: string;
+  readonly value: string;
+  readonly rows: RemarkRow[];
+}
+
+export interface RemarkRow {
+  readonly location: string;
+  readonly description: string;
+  readonly photos: DataRecord[];
+}
+
+type PhotoRecordRole = 'observation' | 'followup' | 'remarks' | 'other';
+
+interface PhotoRecordRow {
+  readonly sectionIndex: number;
+  readonly questionId: string;
+  readonly questionIndex: number;
+  readonly questionNo: string;
+  readonly questionText: string;
+  readonly role: PhotoRecordRole;
+  readonly answerRowIndex: number;
+  readonly location: string;
+  readonly finding: string;
+  readonly description: string;
+  readonly dueDate: string;
+  readonly completionDate: string;
+  readonly action: string;
+  readonly actionBy: string;
+  readonly rectificationStatus: string;
+  readonly attachments: DataRecord[];
+}
+
+interface CheckListRecord {
+  readonly sectionIndex: number;
+  readonly questionIndex: number;
+  readonly questionId: string;
+  readonly reachableQuestionIds: ReadonlySet<string>;
+  readonly groupSectionNo: string;
+  readonly sectionNo: string;
+  readonly description: string;
+  readonly value: string;
+  readonly dueDates: string[];
+  readonly completionDates: string[];
+  readonly rectificationStatuses: string[];
+}
+
+interface PhotoRecordData {
+  readonly checkLists: CheckListRecord[];
+  readonly rows: PhotoRecordRow[];
+}
+
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg']);
+const questionNumberPattern = /^\s*([A-Za-z]+\d+(?:[.\-]\d+)*|\d+(?:[.\-]\d+)*)\s*(?:[.)\-:])?\s*/;
+
 function answerIndex(answers: DataRecord[]): Map<string, AnswerEntry[]> {
   const index = new Map<string, AnswerEntry[]>();
   for (const answer of answers) {
@@ -134,6 +219,72 @@ function optionMaps(template: DataRecord): Map<string, Map<string, string>> {
 
 function resolvedValues(cellId: string, answers: Map<string, AnswerEntry[]>, options: Map<string, Map<string, string>>): string[] {
   return (answers.get(cellId) ?? []).map((entry) => entry.value || options.get(cellId)?.get(id(entry.answerId)) || '').filter(Boolean);
+}
+
+function splitQuestionDescription(description: string): { sectionNo: string; questionText: string } {
+  const match = description.match(questionNumberPattern);
+  if (!match) return { sectionNo: '', questionText: description.trim() };
+  return { sectionNo: match[1], questionText: description.slice(match[0].length).trim() };
+}
+
+function displayQuestionCode(customQuestionCode: unknown, derivedQuestionCode: string): string {
+  const code = text(customQuestionCode).trim();
+  return code && !code.includes('__') ? code : derivedQuestionCode;
+}
+
+function questionRoleForDescription(description: string): PhotoRecordRole {
+  const normalized = description.toLowerCase();
+  if (/(^|\s)observation\s*$/.test(normalized)) return 'observation';
+  if (/(^|\s)follow[\s-]?up\s*$/.test(normalized)) return 'followup';
+  if (/(^|\s)remarks?\s*$/.test(normalized)) return 'remarks';
+  return 'other';
+}
+
+function groupSectionNoForQuestion(questionNo: string, fallback: number): string {
+  return questionNo.match(/^[A-Za-z]+/)?.[0] ?? String(fallback + 1);
+}
+
+function answerType(cell: DataRecord): string {
+  return text(cell.answerType).toLowerCase();
+}
+
+function isPhotoAttachment(attachment: DataRecord): boolean {
+  if (attachment.status === false) return false;
+  return IMAGE_EXTENSIONS.has(text(attachment.ext).replace(/^\./, '').toLowerCase());
+}
+
+function fieldForCell(cell: DataRecord): keyof Pick<
+PhotoRecordRow,
+  'location' | 'finding' | 'description' | 'dueDate' | 'completionDate' | 'action' | 'actionBy' | 'rectificationStatus'
+> | undefined {
+  const description = text(cell.cellDesc).toLowerCase();
+  if (/area\s*\/?\s*location/.test(description)) return 'location';
+  if (/agreed.*due.*date/.test(description)) return 'dueDate';
+  if (/date.*complet/.test(description)) return 'completionDate';
+  if (/action\s*by/.test(description)) return 'actionBy';
+  if (/follow.*action|preposed.*rectification/.test(description)) return 'action';
+  if (/rectification\s*status/.test(description)) return 'rectificationStatus';
+  if (/finding/.test(description)) return 'finding';
+  if (/description/.test(description)) return 'description';
+  return undefined;
+}
+
+function cellOptionName(cell: DataRecord, answerId: unknown): string {
+  const options = records(isRecord(cell.answerGroup) ? cell.answerGroup.generalOptions : undefined);
+  return text(options.find((option) => id(option.id) === id(answerId))?.name);
+}
+
+function answerCellValue(cell: DataRecord, answerCell: DataRecord): string {
+  if (answerType(cell) === 'datetime') return text(answerCell.answerVal);
+  if (answerCell.answerVal != null && answerCell.answerVal !== '') return text(answerCell.answerVal);
+  if (answerCell.answerId != null) return cellOptionName(cell, answerCell.answerId);
+  return '';
+}
+
+function stringValues(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string');
+  if (typeof value === 'string') return [value];
+  return [];
 }
 
 function reachableCells(toggleCell: DataRecord, questions: Map<string, DataRecord>, triggered: Map<string, Set<string>>): DataRecord[] {
@@ -247,6 +398,7 @@ export function analyze(data: DataRecord, input: AnalyzeOptions = DEFAULT_ANALYZ
 
 export class FormDataBuilderImpl {
   private readonly cache = new Map<string, DataRecord[]>();
+  private photoRecordData?: PhotoRecordData;
 
   constructor(private readonly data: DataRecord) {}
 
@@ -286,25 +438,264 @@ export class FormDataBuilderImpl {
   }
 
   getQuestionMetadata(answerTypes: readonly string[] = []): DataRecord[] {
+    const requestedAnswerTypes = new Set(answerTypes.map((value) => value.toLowerCase()));
+    const answersByQuestionId = new Map<string, DataRecord>();
+    for (const answer of records(this.data.answers)) {
+      const questionId = id(answer.questionId);
+      if (questionId) answersByQuestionId.set(questionId, answer);
+    }
     const template = isRecord(this.data.template) ? this.data.template : {};
     return records(template.sections).flatMap((section, sectionIndex) => records(section.questions)
-      .filter((question) => !answerTypes.length || records(question.cells).some((cell) => answerTypes.includes(text(cell.answerType))))
-      .map((question, questionIndex) => ({
-        sectionIndex,
-        sectionNo: text(question.questionCode),
-        sectionOrdering: section.ordering,
-        questionId: question.id,
-        questionIndex,
-        questionCode: question.questionCode,
-        questionText: text(question.questionDesc || question.questionName),
-        answerTypes: [...new Set(records(question.cells).map((cell) => text(cell.answerType)))],
-      })));
+      .flatMap((question, questionIndex) => {
+        const questionAnswerTypes = [...new Set(records(question.cells).map((cell) => answerType(cell)))];
+        if (requestedAnswerTypes.size > 0 && !questionAnswerTypes.some((cellType) => requestedAnswerTypes.has(cellType))) return [];
+        const answer = answersByQuestionId.get(id(question.id));
+        const description = text(answer?.customQuestionDesc || question.questionDesc || question.questionName).trim();
+        const derived = splitQuestionDescription(description);
+        return [{
+          sectionIndex,
+          sectionNo: displayQuestionCode(answer?.customQuestionCode, derived.sectionNo),
+          sectionOrdering: section.ordering,
+          questionId: question.id,
+          questionIndex,
+          questionCode: question.questionCode,
+          questionText: derived.questionText,
+          answerTypes: questionAnswerTypes,
+        }];
+      }));
   }
 
   getPhotoRecords(): DataRecord[] {
     return [...this.getCellValueMap().entries()].flatMap(([cellId, answer]) => records(answer.attachments)
       .filter((attachment) => attachment.status !== false && /^(png|jpe?g)$/i.test(text(attachment.ext).replace(/^\./, '')))
       .map((attachment, attachmentIndex) => ({ cellId, answerCell: answer, attachment, attachmentIndex })));
+  }
+
+  getFollowupSections(): FollowupSection[] {
+    const { checkLists, rows } = this.getPhotoRecordData();
+    const observations = rows.filter((row) => row.role === 'observation');
+    const followups = rows.filter((row) => row.role === 'followup');
+    const sections = new Map<string, FollowupSection>();
+
+    for (const checkList of checkLists) {
+      const observationRows = observations.filter((row) => checkList.reachableQuestionIds.has(row.questionId));
+      if (!observationRows.length) continue;
+
+      let section = sections.get(checkList.groupSectionNo);
+      if (!section) {
+        section = { sectionNo: checkList.groupSectionNo, questions: [] };
+        sections.set(checkList.groupSectionNo, section);
+      }
+
+      section.questions.push({
+        sectionNo: checkList.sectionNo,
+        description: checkList.description,
+        value: checkList.value,
+        rows: observationRows.map((observation) => {
+          const candidates = followups.filter((followup) => checkList.reachableQuestionIds.has(followup.questionId));
+          const followup = candidates.find((candidate) => candidate.answerRowIndex === observation.answerRowIndex)
+            ?? (candidates.length === 1 ? candidates[0] : undefined);
+          return {
+            actionBy: followup?.actionBy ?? '',
+            completionForAgreedDueDate: checkList.dueDates[observation.answerRowIndex] ?? observation.dueDate,
+            completionDate: checkList.completionDates[observation.answerRowIndex] ?? followup?.completionDate ?? '',
+            rectificationStatus: checkList.rectificationStatuses[observation.answerRowIndex] ?? followup?.rectificationStatus ?? '',
+            location: observation.location,
+            finding: observation.finding,
+            action: followup?.action ?? '',
+            observationPhotos: observation.attachments,
+            followupPhotos: followup?.attachments ?? [],
+          };
+        }),
+      });
+    }
+
+    return [...sections.values()];
+  }
+
+  getRemarkSections(): RemarkSection[] {
+    const { checkLists, rows } = this.getPhotoRecordData();
+    const remarks = rows.filter((row) => row.role === 'remarks');
+    const sections = new Map<string, RemarkSection>();
+
+    for (const checkList of checkLists) {
+      const remarkRows = remarks.filter((row) => checkList.reachableQuestionIds.has(row.questionId));
+      if (!remarkRows.length) continue;
+
+      let section = sections.get(checkList.groupSectionNo);
+      if (!section) {
+        section = { sectionNo: checkList.groupSectionNo, questions: [] };
+        sections.set(checkList.groupSectionNo, section);
+      }
+
+      section.questions.push({
+        sectionNo: checkList.sectionNo,
+        description: checkList.description,
+        value: checkList.value,
+        rows: remarkRows.map((remark) => ({
+          location: remark.location,
+          description: remark.description,
+          photos: remark.attachments,
+        })),
+      });
+    }
+
+    return [...sections.values()];
+  }
+
+  private getPhotoRecordData(): PhotoRecordData {
+    if (this.photoRecordData) return this.photoRecordData;
+
+    const template = isRecord(this.data.template) ? this.data.template : {};
+    const sections = records(template.sections);
+    const answersByQuestionId = new Map<string, DataRecord>();
+    for (const answer of records(this.data.answers)) {
+      const questionId = id(answer.questionId);
+      if (questionId) answersByQuestionId.set(questionId, answer);
+    }
+
+    const checkLists: CheckListRecord[] = [];
+    const rows: PhotoRecordRow[] = [];
+    const checkListSections = this.getCheckListSections();
+    const checkListSectionByTemplateIndex = new Map<number, DataRecord>();
+    let checkListSectionIndex = 0;
+    for (const [sectionIndex, section] of sections.entries()) {
+      const sectionQuestions = records(section.questions);
+      if (sectionQuestions.some((question) => records(question.cells).some((cell) => answerType(cell) === 'togglebutton'))) {
+        const checkListSection = checkListSections[checkListSectionIndex];
+        if (checkListSection) checkListSectionByTemplateIndex.set(sectionIndex, checkListSection);
+        checkListSectionIndex += 1;
+      }
+    }
+
+    const workflowGroups = this.getCheckListWorkflowGroups();
+    for (const [sectionIndex, section] of sections.entries()) {
+      for (const [questionIndex, question] of records(section.questions).entries()) {
+        const questionId = id(question.id);
+        const answer = answersByQuestionId.get(questionId);
+        const questionDescription = text(answer?.customQuestionDesc || question.questionDesc || question.questionName).trim();
+        const questionDetails = splitQuestionDescription(questionDescription);
+        const answerRows = records(answer?.rows);
+        const questionCells = records(question.cells);
+        const checkListCells = questionCells.filter((cell) => answerType(cell) === 'togglebutton');
+
+        if (checkListCells.length > 0 && questionDetails.sectionNo) {
+          const groupSectionNo = groupSectionNoForQuestion(questionDetails.sectionNo, sectionIndex);
+          const sectionItems = records(checkListSectionByTemplateIndex.get(sectionIndex)?.items);
+          const checkListItem = sectionItems.find((item) =>
+            text(item.questionDesc) === text(question.questionDesc) ||
+            text(item.questionName) === text(question.questionName) ||
+            text(item.questionDesc) === text(question.questionName) ||
+            text(item.questionName) === text(question.questionDesc));
+          if (!checkListItem) continue;
+
+          checkLists.push({
+            sectionIndex,
+            questionIndex,
+            questionId,
+            reachableQuestionIds: workflowGroups.get(questionId) ?? new Set(),
+            groupSectionNo,
+            sectionNo: questionDetails.sectionNo,
+            description: text(checkListItem.toggleCellDesc || checkListItem.questionDesc),
+            value: text(checkListItem.toggleName),
+            dueDates: stringValues(checkListItem.dueDate),
+            completionDates: stringValues(checkListItem.completionDate),
+            rectificationStatuses: stringValues(checkListItem.rectificationStatus),
+          });
+        }
+
+        const role = questionRoleForDescription(questionDetails.questionText);
+        if (!answer || role === 'other') continue;
+
+        for (const [answerRowIndex, answerRow] of answerRows.entries()) {
+          const values = {
+            location: '',
+            finding: '',
+            description: '',
+            dueDate: '',
+            completionDate: '',
+            action: '',
+            actionBy: '',
+            rectificationStatus: '',
+          };
+          const attachments: DataRecord[] = [];
+          const answerCells = records(answerRow.cells);
+
+          for (const cell of questionCells) {
+            const answerCell = answerCells.find((item) => id(item.cellId) === id(cell.id));
+            if (!answerCell) continue;
+
+            if (answerType(cell) === 'file') {
+              attachments.push(...records(answerCell.attachments).filter(isPhotoAttachment).map((attachment) => ({ ...attachment })));
+            }
+
+            const field = fieldForCell(cell);
+            if (field) values[field] = answerCellValue(cell, answerCell);
+          }
+
+          rows.push({
+            sectionIndex,
+            questionId,
+            questionIndex,
+            questionNo: questionDetails.sectionNo,
+            questionText: questionDetails.questionText,
+            role,
+            answerRowIndex,
+            ...values,
+            attachments: attachmentList(attachments),
+          });
+        }
+      }
+    }
+
+    this.photoRecordData = { checkLists, rows };
+    return this.photoRecordData;
+  }
+
+  private getCheckListWorkflowGroups(): Map<string, Set<string>> {
+    const template = isRecord(this.data.template) ? this.data.template : {};
+    const questionById = new Map<string, DataRecord>();
+    const triggeredByCell = new Map<string, Set<string>>();
+
+    for (const section of records(template.sections)) {
+      for (const question of records(section.questions)) {
+        const questionId = id(question.id);
+        if (!questionId) continue;
+        questionById.set(questionId, question);
+        for (const trigger of records(question.triggeredByCells)) {
+          const cellId = id(trigger.cellId);
+          if (!cellId) continue;
+          const questions = triggeredByCell.get(cellId) ?? new Set<string>();
+          questions.add(questionId);
+          triggeredByCell.set(cellId, questions);
+        }
+      }
+    }
+
+    const groups = new Map<string, Set<string>>();
+    for (const [questionId, question] of questionById.entries()) {
+      const toggleCells = records(question.cells).filter((cell) => answerType(cell) === 'togglebutton');
+      if (!toggleCells.length) continue;
+
+      const reached = new Set<string>();
+      const pending = [...toggleCells];
+      while (pending.length) {
+        const cell = pending.pop()!;
+        const nextQuestionIds = new Set(triggeredByCell.get(id(cell.id)) ?? []);
+        for (const flow of records(cell.flows)) {
+          const nextQuestionId = id(flow.nextQuestionId);
+          if (nextQuestionId) nextQuestionIds.add(nextQuestionId);
+        }
+        for (const nextQuestionId of nextQuestionIds) {
+          if (reached.has(nextQuestionId)) continue;
+          reached.add(nextQuestionId);
+          const nextQuestion = questionById.get(nextQuestionId);
+          if (nextQuestion) pending.push(...records(nextQuestion.cells));
+        }
+      }
+      groups.set(questionId, reached);
+    }
+    return groups;
   }
 }
 
@@ -317,6 +708,8 @@ export interface FormDataBuilder {
   getCellInfoMap(): Map<string, DataRecord>;
   getQuestionMetadata(answerTypes?: readonly string[]): DataRecord[];
   getPhotoRecords(): DataRecord[];
+  getFollowupSections(): FollowupSection[];
+  getRemarkSections(): RemarkSection[];
 }
 
 export function loaderBuilder<T extends DataRecord>(form: T): T & { builder: FormDataBuilder; helper: FormDataBuilder; filter: FormDataBuilder } {

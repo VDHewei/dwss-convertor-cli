@@ -31,7 +31,8 @@
 | `getCellValueMap()` | 返回 `cellId -> 实际答案单元格` 的 Map。 |
 | `getCellInfoMap()` | 返回 `cellId -> 模板单元格` 的 Map。 |
 | `getQuestionMetadata(answerTypes?)` | 返回章节、问题编号、标题和答案类型元数据；可按答案类型过滤。 |
-| `getPhotoRecords()` | 返回状态有效且扩展名为 PNG/JPG/JPEG 的附件记录。 |
+| `getFollowupSections()` | 按 checklist 的可达问题链路聚合 Observation/Followup 行，并按行号进行配对。 |
+| `getRemarkSections()` | 按 checklist 的可达问题链路聚合 Remarks 行（不与其他角色配对）。 |
 
 ### Togglebutton 清单逻辑
 
@@ -54,6 +55,27 @@
 ```
 
 `appendOptions(items, threshold?, cacheKey?)` 会在默认列基础上追加列；`defaultColumns` 和 `MATCH_THRESHOLD` 可直接读取。
+
+### WEB-9072: Followup / Remark 聚合
+
+- `getFollowupSections()` 会：
+  1. 识别 `questionDesc` 结尾为 `Observation` / `Followup` 的问题；
+  2. 通过 checklist toggle 的 `flows` 与 `triggeredByCells` 追踪可达问题；
+  3. 将 Observation 与 Followup 按同一 answer row index 对齐，输出 `completionForAgreedDueDate`、`completionDate`、`rectificationStatus`、`observationPhotos`、`followupPhotos`。
+- `getRemarkSections()` 会识别 `Remarks` 问题，并输出每行的 `location`、`description`、`photos`。
+
+模板示例：
+
+```text
++++FOR section IN builder.getFollowupSections()+++
++++FOR question IN section.questions+++
+++INS question.sectionNo+++ ++INS question.description+++
++++FOR row IN question.rows+++
+++INS row.location+++ / ++INS row.finding+++ / ++INS row.action+++
+++END-FOR row+++
+++END-FOR question+++
+++END-FOR section+++
+```
 
 ## 3. Js-Context 函数
 
