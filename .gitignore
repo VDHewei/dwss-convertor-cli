@@ -7,3 +7,4 @@ graphify-out/
 .reasonix/
 .ua/
 ignored
+.env
